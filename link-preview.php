@@ -119,7 +119,7 @@ function slp_shortcode( $atts ) {
     $meta = slp_get_open_graph_data( $url );
 
     if ( $meta !== 'pending' && $meta ) {
-        return slp_render_preview( url: $url, $meta );
+        return slp_render_preview( $url, $meta );
     }
 
     $id = 'slp-' . md5( $url );
