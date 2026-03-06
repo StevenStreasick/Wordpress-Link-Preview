@@ -111,36 +111,12 @@ function slp_render_preview( $url, $meta ) {
     <?php return ob_get_clean();
 }
 
-function slp_debug_status( $url ) {
-    $cache_key   = 'slp_' . md5( $url );
-    $pending_key = 'slp_pending_' . md5( $url );
-    $cached      = get_transient( $cache_key );
-    $next_cron   = wp_next_scheduled( 'slp_fetch_preview', [ $url ] );
-
-    $status = [
-        'url'         => $url,
-        'cache_key'   => $cache_key,
-        'cache'       => $cached ? 'HIT: ' . $cached['title'] : 'MISS',
-        'cron_queued' => $next_cron ? 'YES - fires at ' . date('H:i:s', $next_cron) : 'NO',
-    ];
-
-    echo '<pre style="background:#1a1a1a;color:#00ff00;padding:12px;font-size:12px;z-index:9999;position:relative;">';
-    echo "=== SLP DEBUG ===\n";
-    foreach ( $status as $k => $v ) {
-        echo str_pad($k, 15) . ': ' . print_r($v, true) . "\n";
-    }
-    echo '</pre>';
-}
-
 function slp_shortcode( $atts ) {
     $atts = shortcode_atts( ['url' => ''], $atts );
     if ( empty( $atts['url'] ) ) return '';
 
     $url  = esc_url_raw( $atts['url'] );
     $meta = slp_get_open_graph_data( $url );
-
-    // TEMPORARY - remove when done
-    slp_debug_status( $url );
 
     if ( $meta !== 'pending' && $meta ) {
         return slp_render_preview( url: $url, $meta );
@@ -182,22 +158,3 @@ function slp_shortcode( $atts ) {
 }
 
 add_shortcode( 'link_preview', 'slp_shortcode' );
-
-add_action('init', function() {
-    if ( isset($_GET['slp_flush']) && current_user_can('manage_options') ) {
-        global $wpdb;
-        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_slp_%'");
-        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_slp_%'");
-        wp_die('SLP transients cleared!');
-    }
-});
-
-add_action('wp_footer', function() {
-    $url = 'https://www.youtube.com/shorts/W4qISOjdkJk'; // replace with one of your preview URLs
-    $cache_key = 'slp_' . md5( $url );
-    $cached = get_transient( $cache_key );
-    echo '<pre style="background:#000;color:#0f0;padding:10px;">';
-    echo 'Cache key: ' . $cache_key . "\n";
-    echo 'Cached value: ' . ( $cached ? 'HIT - ' . $cached['title'] : 'MISS (expired or never set)' );
-    echo '</pre>';
-});
